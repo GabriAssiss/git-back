@@ -1,0 +1,27 @@
+FROM eclipse-temurin:21-jdk AS builder
+
+ENV HOME=/build
+WORKDIR $HOME
+
+RUN apt update && \
+	apt install -y dos2unix
+
+COPY . .
+COPY .mvn ./.mvn
+RUN dos2unix ./mvnw && \
+	chmod +x ./mvnw && \
+	./mvnw package
+
+FROM eclipse-temurin:21-jre-alpine AS runner
+
+ENV HOME=/app
+WORKDIR $HOME
+
+ENV NAME="backend"
+ENV VERSION="0.0.1-SNAPSHOT"
+ENV FILE_NAME=${NAME}-${VERSION}.jar
+ENV PORT=8080
+
+COPY --from=builder "/build/target/${FILE_NAME}" .
+
+CMD java -jar ${FILE_NAME}
